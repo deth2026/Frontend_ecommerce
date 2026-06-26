@@ -1,19 +1,32 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useCartStore } from '@/store/cart'
+import { useNotificationStore } from '@/store/notifications'
 import { useWishlistStore } from '@/store/wishlist'
 import { toImageUrl } from '@/services/response'
 
 const wishlistStore = useWishlistStore()
 const cartStore = useCartStore()
+const notifications = useNotificationStore()
 
 onMounted(() => {
   wishlistStore.loadWishlist().catch(() => undefined)
 })
 
 const addToCart = async (product: any) => {
-  await cartStore.addToCart(product)
+  try {
+    await cartStore.addToCart(product)
+  } catch (err: any) {
+    if (err.response?.status === 401) {
+      window.location.href = '/login'
+      return
+    }
+
+    notifications.error(err?.message || 'Unable to add this product to your cart.')
+  }
 }
+
+const isOutOfStock = (product: any) => cartStore.isOutOfStock(product)
 </script>
 
 <template>
@@ -33,7 +46,12 @@ const addToCart = async (product: any) => {
       </div>
 
       <div v-else class="wishlist-grid">
-        <article v-for="item in wishlistStore.items" :key="item.id" class="wishlist-card">
+        <article
+          v-for="item in wishlistStore.items"
+          :key="item.id"
+          class="wishlist-card"
+          :class="{ 'wishlist-card--disabled': isOutOfStock(item) }"
+        >
           <img v-if="item.image" :src="toImageUrl(item.image)" :alt="item.name" />
           <div v-else class="placeholder">💗</div>
 
@@ -51,7 +69,14 @@ const addToCart = async (product: any) => {
             >
               Remove
             </button>
-            <button type="button" class="solid-btn" @click="addToCart(item)">Add to Cart</button>
+            <button
+              type="button"
+              class="solid-btn"
+              :disabled="isOutOfStock(item)"
+              @click="addToCart(item)"
+            >
+              {{ isOutOfStock(item) ? 'Out of Stock' : 'Add to Cart' }}
+            </button>
           </div>
         </article>
       </div>
@@ -105,6 +130,16 @@ const addToCart = async (product: any) => {
   border-radius: 28px;
   box-shadow: 0 14px 40px rgba(18, 32, 51, 0.06);
   padding: 18px;
+}
+
+.wishlist-card--disabled {
+  opacity: 0.72;
+  filter: grayscale(0.35);
+}
+
+.wishlist-card--disabled img,
+.wishlist-card--disabled .placeholder {
+  filter: grayscale(1);
 }
 
 .wishlist-card img,
@@ -165,6 +200,12 @@ const addToCart = async (product: any) => {
 .solid-btn {
   background: linear-gradient(90deg, #ff7a15 0%, #ff9c4a 100%);
   color: #fff;
+}
+
+.solid-btn:disabled {
+  background: #c9d2df;
+  color: #fff;
+  cursor: not-allowed;
 }
 
 .ghost-btn {

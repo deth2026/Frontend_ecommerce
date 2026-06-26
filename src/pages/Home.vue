@@ -58,7 +58,12 @@
         <p v-else-if="productsError" class="error-state">{{ productsError }}</p>
 
         <div v-else class="products-grid">
-          <div v-for="product in products.slice(0, 8)" :key="product.id" class="product-card">
+          <div
+            v-for="product in products.slice(0, 8)"
+            :key="product.id"
+            class="product-card"
+            :class="{ 'product-card--disabled': isOutOfStock(product) }"
+          >
             <div class="card-media">
               <img
                 v-if="product.image"
@@ -68,7 +73,10 @@
                 loading="lazy"
               />
               <div v-else class="placeholder">📸</div>
-              <span v-if="product.stock < 5" class="low-stock">Only a few left!</span>
+              <span v-if="isOutOfStock(product)" class="out-of-stock">Out of stock</span>
+              <span v-else-if="isLowStock(product)" class="low-stock">
+                Only a few left!
+              </span>
             </div>
 
             <div class="card-body">
@@ -77,7 +85,13 @@
 
               <div class="card-footer">
                 <span class="card-price">${{ product.price }}</span>
-                <button @click="addToCart(product)" class="btn-add-to-cart">Add to Cart</button>
+                <button
+                  @click="addToCart(product)"
+                  class="btn-add-to-cart"
+                  :disabled="isOutOfStock(product)"
+                >
+                  {{ isOutOfStock(product) ? 'Out of Stock' : 'Add to Cart' }}
+                </button>
               </div>
             </div>
           </div>
@@ -162,8 +176,10 @@ import { ref, onMounted } from 'vue'
 import { getProducts } from '@/services/productService'
 import { toImageUrl } from '@/services/response'
 import { useCartStore } from '@/store/cart'
+import { useNotificationStore } from '@/store/notifications'
 
 const cartStore = useCartStore()
+const notifications = useNotificationStore()
 
 // Products
 const products = ref<any[]>([])
@@ -187,8 +203,17 @@ const addToCart = (product: any) => {
   cartStore.addToCart(product).catch((err: any) => {
     if (err.response?.status === 401) {
       window.location.href = '/login'
+      return
     }
+
+    notifications.error(err?.message || 'Unable to add this product to your cart.')
   })
+}
+
+const isOutOfStock = (product: any) => cartStore.isOutOfStock(product)
+const isLowStock = (product: any) => {
+  const stock = cartStore.getProductStock(product)
+  return stock !== null && stock > 0 && stock < 5
 }
 
 onMounted(() => {
@@ -435,6 +460,21 @@ onMounted(() => {
   transition: all 0.4s ease;
 }
 
+.product-card--disabled {
+  opacity: 0.72;
+  filter: grayscale(0.35);
+}
+
+.product-card--disabled:hover {
+  transform: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.product-card--disabled .product-img,
+.product-card--disabled .placeholder {
+  filter: grayscale(1);
+}
+
 .product-card:hover {
   transform: translateY(-12px);
   box-shadow: 0 25px 50px rgba(249, 115, 22, 0.18);
@@ -465,6 +505,18 @@ onMounted(() => {
   top: 16px;
   right: 16px;
   background: #f97316;
+  color: white;
+  font-size: 0.75rem;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.out-of-stock {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #64748b;
   color: white;
   font-size: 0.75rem;
   padding: 6px 14px;
@@ -517,6 +569,12 @@ onMounted(() => {
 .btn-add-to-cart:hover {
   background: #ea580c;
   transform: translateY(-2px);
+}
+
+.btn-add-to-cart:disabled {
+  background: #c9d2df;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* BENEFITS WITH ICONS */

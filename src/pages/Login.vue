@@ -49,21 +49,21 @@ const submit = async () => {
 
       <form @submit.prevent="submit">
         <div class="form-group">
-          <input 
-            v-model="form.email" 
-            type="email" 
-            placeholder="Email address" 
-            required 
+          <input
+            v-model="form.email"
+            type="email"
+            placeholder="Email address"
+            required
           />
           <div v-if="errors.email" class="error-message">{{ errors.email[0] }}</div>
         </div>
 
         <div class="form-group">
-          <input 
-            v-model="form.password" 
-            type="password" 
-            placeholder="Password" 
-            required 
+          <input
+            v-model="form.password"
+            type="password"
+            placeholder="Password"
+            required
           />
           <div v-if="errors.password" class="error-message">{{ errors.password[0] }}</div>
         </div>
@@ -78,7 +78,7 @@ const submit = async () => {
       </form>
 
       <p class="auth-switch">
-        Don't have an account? 
+        Don't have an account?
         <router-link to="/register">Create one</router-link>
       </p>
     </div>

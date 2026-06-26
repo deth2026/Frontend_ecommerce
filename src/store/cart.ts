@@ -22,6 +22,51 @@ export const useCartStore = defineStore('cart', () => {
     product_id: item.product_id ?? item.product?.id ?? item.id,
   })
 
+  const getProductStock = (product: any) => {
+    const stockCandidates = [
+      product?.stock,
+      product?.stock_quantity,
+      product?.available_stock,
+      product?.inventory,
+      product?.inventory_count,
+      product?.remaining_stock,
+      product?.quantity_available,
+      product?.qty,
+      product?.quantity,
+      product?.available,
+      product?.in_stock,
+      product?.product?.stock,
+      product?.product?.stock_quantity,
+      product?.product?.available_stock,
+      product?.product?.inventory,
+      product?.product?.inventory_count,
+      product?.product?.remaining_stock,
+      product?.product?.quantity_available,
+      product?.product?.qty,
+      product?.product?.quantity,
+      product?.product?.available,
+      product?.product?.in_stock,
+    ]
+
+    for (const candidate of stockCandidates) {
+      if (candidate === null || candidate === undefined || candidate === '') continue
+
+      if (typeof candidate === 'boolean') {
+        return candidate ? 1 : 0
+      }
+
+      const stock = Number(candidate)
+      if (Number.isFinite(stock)) return stock
+    }
+
+    return null
+  }
+
+  const isOutOfStock = (product: any) => {
+    const stock = getProductStock(product)
+    return stock !== null ? stock <= 0 : false
+  }
+
   const totalItems = computed(() => items.value.reduce((sum, item) => sum + Number(item.quantity || 0), 0))
 
   const totalPrice = computed(() =>
@@ -48,6 +93,18 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   const addToCart = async (product: any, quantity = 1) => {
+    const stock = getProductStock(product)
+
+    if (stock !== null) {
+      if (stock <= 0) {
+        throw new Error('This product is out of stock.')
+      }
+
+      if (quantity > stock) {
+        throw new Error(`Only ${stock} left in stock.`)
+      }
+    }
+
     try {
       await apiAddToCart({ product_id: product.id, quantity })
       await loadCart()
@@ -80,9 +137,21 @@ export const useCartStore = defineStore('cart', () => {
       return
     }
 
+    const item = items.value.find((i) => i.id === itemId)
+    const stock = getProductStock(item?.product)
+
+    if (stock !== null) {
+      if (stock <= 0) {
+        throw new Error('This product is out of stock.')
+      }
+
+      if (quantity > stock) {
+        quantity = stock
+      }
+    }
+
     try {
       await updateCartItem(itemId, quantity)
-      const item = items.value.find((i) => i.id === itemId)
       if (item) item.quantity = quantity
     } catch (err) {
       if ((err as any)?.response?.status === 401) {
@@ -103,6 +172,8 @@ export const useCartStore = defineStore('cart', () => {
     error,
     totalItems,
     totalPrice,
+    getProductStock,
+    isOutOfStock,
     loadCart,
     addToCart,
     removeFromCart,

@@ -86,7 +86,7 @@ onMounted(() => {
 <template>
   <nav v-if="!isAuthPage" class="navbar">
     <div class="nav-container">
-      <router-link to="/" class="logo">Glowrose</router-link>
+      <router-link to="/" class="logo" aria-label="MyShop home">MyShop</router-link>
 
       <div class="links">
         <router-link to="/" class="nav-link">Home</router-link>
@@ -127,7 +127,11 @@ onMounted(() => {
               <router-link to="/profile" class="account-menu__item" @click="closeAccountMenu">
                 View Profile
               </router-link>
-              <button type="button" class="account-menu__item account-menu__item--danger" @click="openLogoutFromMenu">
+              <button
+                type="button"
+                class="account-menu__item account-menu__item--danger"
+                @click="openLogoutFromMenu"
+              >
                 Logout
               </button>
             </div>
@@ -176,9 +180,9 @@ onMounted(() => {
 .logo {
   font-size: 1.45rem;
   font-weight: 800;
-  /* color: #16243c; */
-  text-decoration: none;
   letter-spacing: -0.03em;
+  text-decoration: none;
+  color: #f56f08;
 }
 
 .links,
@@ -212,9 +216,16 @@ onMounted(() => {
   transform: translateY(-1px);
 }
 
-.router-link-active {
+.nav-link.router-link-active,
+.nav-link.router-link-exact-active {
   background: rgba(255, 122, 21, 0.12);
   color: #ff7a15;
+}
+
+.logo.router-link-active,
+.logo.router-link-exact-active {
+  background: transparent;
+  color: #f56f08;
 }
 
 .nav-link--solid {

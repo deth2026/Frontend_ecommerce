@@ -5,6 +5,7 @@ import { getProduct } from '@/services/productService'
 import { getProductReviews, createReview } from '@/services/reviewService'
 import { toImageUrl } from '@/services/response'
 import { useCartStore } from '@/store/cart'
+import { useNotificationStore } from '@/store/notifications'
 import { useWishlistStore } from '@/store/wishlist'
 import { useAuthStore } from '@/store/auth'
 
@@ -12,6 +13,7 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const cartStore = useCartStore()
+const notifications = useNotificationStore()
 const wishlistStore = useWishlistStore()
 
 const product = ref<any>(null)
@@ -58,7 +60,10 @@ const addToCart = async () => {
   } catch (err: any) {
     if (err.response?.status === 401) {
       router.push('/login')
+      return
     }
+
+    notifications.error(err?.message || 'Unable to add this product to your cart.')
   }
 }
 
@@ -72,6 +77,8 @@ const toggleWishlist = async () => {
     }
   }
 }
+
+const isOutOfStock = computed(() => cartStore.isOutOfStock(product.value))
 
 const submitReview = async () => {
   if (!auth.isAuthenticated) {
@@ -135,7 +142,7 @@ onMounted(async () => {
         <div class="meta-grid">
           <div>
             <span>Stock</span>
-            <strong>{{ product.stock ?? 'N/A' }}</strong>
+            <strong>{{ cartStore.getProductStock(product) ?? 'N/A' }}</strong>
           </div>
           <div>
             <span>Category</span>
@@ -144,7 +151,14 @@ onMounted(async () => {
         </div>
 
         <div class="actions">
-          <button type="button" class="solid-btn" @click="addToCart">Add to Cart</button>
+          <button
+            type="button"
+            class="solid-btn"
+            :disabled="isOutOfStock"
+            @click="addToCart"
+          >
+            {{ isOutOfStock ? 'Out of Stock' : 'Add to Cart' }}
+          </button>
           <button type="button" class="ghost-btn" @click="toggleWishlist">Wishlist</button>
         </div>
       </div>
@@ -330,6 +344,12 @@ onMounted(async () => {
 .solid-btn {
   background: linear-gradient(90deg, #ff7a15 0%, #ff9c4a 100%);
   color: #fff;
+}
+
+.solid-btn:disabled {
+  background: #c9d2df;
+  color: #fff;
+  cursor: not-allowed;
 }
 
 .ghost-btn {

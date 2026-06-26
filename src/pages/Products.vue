@@ -2,14 +2,16 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getCategories } from '@/services/categoryService'
-import { getProducts, getProductsByCategory, searchProducts } from '@/services/productService'
+import { getProducts } from '@/services/productService'
 import { toImageUrl } from '@/services/response'
 import { useCartStore } from '@/store/cart'
+import { useNotificationStore } from '@/store/notifications'
 import { useWishlistStore } from '@/store/wishlist'
 
 const route = useRoute()
 const router = useRouter()
 const cartStore = useCartStore()
+const notifications = useNotificationStore()
 const wishlistStore = useWishlistStore()
 
 const categories = ref<any[]>([])
@@ -20,11 +22,37 @@ const searchQuery = ref(String(route.query.q || ''))
 const selectedCategory = ref<number | null>(
   route.query.category ? Number(route.query.category) : null,
 )
-const debounceTimer = ref<number | null>(null)
 
 const activeCategoryName = computed(() => {
   if (!selectedCategory.value) return 'All Products'
   return categories.value.find((category) => Number(category.id) === Number(selectedCategory.value))?.name || 'Category'
+})
+
+const normalizedSearchQuery = computed(() => searchQuery.value.trim().toLowerCase())
+
+const filteredProducts = computed(() => {
+  const query = normalizedSearchQuery.value
+  return products.value.filter((product) => {
+    const matchesCategory =
+      !selectedCategory.value || Number(product.category?.id || product.category_id) === Number(selectedCategory.value)
+
+    if (!matchesCategory) return false
+
+    if (!query) return true
+
+    const haystack = [
+      product.name,
+      product.description,
+      product.category?.name,
+      product.category_name,
+      product.categoryName,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+
+    return haystack.includes(query)
+  })
 })
 
 const normalizeProducts = (items: any[]) => {
@@ -49,19 +77,8 @@ const fetchProducts = async () => {
   error.value = ''
 
   try {
-    const query = searchQuery.value.trim()
-
-    let response
-    if (query) {
-      response = await searchProducts(query)
-      products.value = normalizeProducts(response.data || [])
-    } else if (selectedCategory.value) {
-      response = await getProductsByCategory(selectedCategory.value)
-      products.value = normalizeProducts(response.data || [])
-    } else {
-      response = await getProducts()
-      products.value = normalizeProducts(response.data || [])
-    }
+    const response = await getProducts()
+    products.value = normalizeProducts(response.data || [])
   } catch (err) {
     error.value = 'Failed to load products.'
     console.error(err)
@@ -76,6 +93,7 @@ const selectCategory = (categoryId: number | null) => {
     query: {
       ...route.query,
       category: categoryId ? String(categoryId) : undefined,
+      q: searchQuery.value.trim() || undefined,
     },
   })
 }
@@ -86,9 +104,14 @@ const addItemToCart = async (product: any) => {
   } catch (err: any) {
     if (err.response?.status === 401) {
       router.push('/login')
+      return
     }
+
+    notifications.error(err?.message || 'Unable to add this product to your cart.')
   }
 }
+
+const isOutOfStock = (product: any) => cartStore.isOutOfStock(product)
 
 const toggleWishlist = async (product: any) => {
   try {
@@ -100,18 +123,14 @@ const toggleWishlist = async (product: any) => {
   }
 }
 
-watch(searchQuery, () => {
-  if (debounceTimer.value) {
-    window.clearTimeout(debounceTimer.value)
-  }
-
-  debounceTimer.value = window.setTimeout(() => {
-    fetchProducts()
-  }, 300)
-})
-
-watch(selectedCategory, () => {
-  fetchProducts()
+watch([searchQuery, selectedCategory], () => {
+  router.replace({
+    query: {
+      ...route.query,
+      q: searchQuery.value.trim() || undefined,
+      category: selectedCategory.value ? String(selectedCategory.value) : undefined,
+    },
+  })
 })
 
 onMounted(async () => {
@@ -166,14 +185,20 @@ onMounted(async () => {
           <p class="section-label">Products</p>
           <h2>{{ activeCategoryName }}</h2>
         </div>
-        <p class="result-count">{{ products.length }} items</p>
+        <p class="result-count">{{ filteredProducts.length }} items</p>
       </div>
 
       <p v-if="loading" class="state">Loading products...</p>
       <p v-else-if="error" class="state state--error">{{ error }}</p>
+      <p v-else-if="!filteredProducts.length" class="state">No products found.</p>
 
       <div v-else class="product-grid">
-        <article v-for="product in products" :key="product.id" class="product-card">
+        <article
+          v-for="product in filteredProducts"
+          :key="product.id"
+          class="product-card"
+          :class="{ 'product-card--disabled': isOutOfStock(product) }"
+        >
           <router-link :to="`/products/${product.id}`" class="product-link">
             <div class="product-media">
               <img v-if="product.imageUrl" :src="product.imageUrl" :alt="product.name" />
@@ -186,7 +211,9 @@ onMounted(async () => {
               <p class="description">{{ product.description || 'No description available.' }}</p>
               <div class="price-row">
                 <strong>${{ Number(product.price).toFixed(2) }}</strong>
-                <span v-if="product.stock !== undefined">Stock: {{ product.stock }}</span>
+                <span v-if="cartStore.getProductStock(product) !== null">
+                  Stock: {{ cartStore.getProductStock(product) }}
+                </span>
               </div>
             </div>
           </router-link>
@@ -207,8 +234,13 @@ onMounted(async () => {
                 {{ wishlistStore.isInWishlist(product.id) ? '♥' : '♡' }}
               </span>
             </button>
-            <button type="button" class="solid-btn" @click="addItemToCart(product)">
-              Add to Cart
+            <button
+              type="button"
+              class="solid-btn"
+              :disabled="isOutOfStock(product)"
+              @click="addItemToCart(product)"
+            >
+              {{ isOutOfStock(product) ? 'Out of Stock' : 'Add to Cart' }}
             </button>
           </div>
         </article>
@@ -364,6 +396,16 @@ onMounted(async () => {
   box-shadow: 0 10px 30px rgba(18, 32, 51, 0.06);
 }
 
+.product-card--disabled {
+  opacity: 0.72;
+  filter: grayscale(0.35);
+}
+
+.product-card--disabled .product-media img,
+.product-card--disabled .placeholder {
+  filter: grayscale(1);
+}
+
 .product-link {
   color: inherit;
   text-decoration: none;
@@ -457,6 +499,14 @@ onMounted(async () => {
   background: linear-gradient(90deg, #ff7a15 0%, #ff9c4a 100%);
   color: #fff;
   box-shadow: 0 10px 18px rgba(255, 122, 21, 0.22);
+}
+
+.solid-btn:disabled {
+  background: #c9d2df;
+  color: #fff;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .state {

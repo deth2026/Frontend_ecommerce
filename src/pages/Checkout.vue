@@ -17,6 +17,10 @@ const form = ref({
 })
 
 const subtotal = computed(() => cartStore.totalPrice)
+const hasUnavailableItems = computed(() =>
+  cartStore.items.some((item) => cartStore.isOutOfStock(item.product)),
+)
+const canCheckout = computed(() => !!cartStore.items.length && !hasUnavailableItems.value)
 
 onMounted(() => {
   cartStore.loadCart().catch(() => undefined)
@@ -38,6 +42,11 @@ const submitCheckout = async () => {
     cartStore.items = []
     router.push('/orders')
   } catch (err: any) {
+    if (err.response?.status === 401) {
+      router.push('/login')
+      return
+    }
+
     error.value =
       err.response?.data?.message ||
       (err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(' ') : '') ||
@@ -65,6 +74,9 @@ const submitCheckout = async () => {
           <div v-if="!cartStore.items.length" class="state state--error">
             Your cart is empty. Add products before checkout.
           </div>
+          <div v-else-if="hasUnavailableItems" class="state state--error">
+            Some items in your cart are out of stock. Please remove them before checkout.
+          </div>
           <label>
             Shipping address
             <textarea v-model="form.shipping_address" rows="4" required placeholder="Enter delivery address" />
@@ -83,7 +95,7 @@ const submitCheckout = async () => {
               <option value="cod">Cash on delivery</option>
             </select>
           </label>
-          <button type="submit" class="solid-btn" :disabled="loading || !cartStore.items.length">
+          <button type="submit" class="solid-btn" :disabled="loading || !canCheckout">
             {{ loading ? 'Placing Order...' : 'Place Order' }}
           </button>
         </form>

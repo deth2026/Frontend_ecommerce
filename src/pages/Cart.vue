@@ -2,10 +2,12 @@
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/store/cart'
+import { useNotificationStore } from '@/store/notifications'
 import { toImageUrl } from '@/services/response'
 
 const router = useRouter()
 const cartStore = useCartStore()
+const notifications = useNotificationStore()
 
 onMounted(() => {
   cartStore.loadCart().catch(() => undefined)
@@ -13,6 +15,23 @@ onMounted(() => {
 
 const goToCheckout = () => {
   router.push('/checkout')
+}
+
+const isOutOfStock = (item: any) => cartStore.isOutOfStock(item.product)
+
+const handleQuantityChange = async (item: any, event: Event) => {
+  const value = Number((event.target as HTMLInputElement).value)
+
+  try {
+    await cartStore.updateQuantity(item.id, value)
+  } catch (err: any) {
+    if (err.response?.status === 401) {
+      router.push('/login')
+      return
+    }
+
+    notifications.error(err?.message || 'Unable to update cart quantity.')
+  }
 }
 </script>
 
@@ -52,10 +71,13 @@ const goToCheckout = () => {
                 <input
                   type="number"
                   min="1"
+                  :max="cartStore.getProductStock(item.product) ?? undefined"
+                  :disabled="isOutOfStock(item)"
                   :value="item.quantity"
-                  @change="cartStore.updateQuantity(item.id, Number(($event.target as HTMLInputElement).value))"
+                  @change="handleQuantityChange(item, $event)"
                 />
               </label>
+              <p v-if="isOutOfStock(item)" class="stock-note">This item is out of stock.</p>
               <button type="button" class="ghost-btn" @click="cartStore.removeFromCart(item.id)">
                 Remove
               </button>
@@ -202,6 +224,19 @@ const goToCheckout = () => {
   border: 2px solid #ffd3aa;
   border-radius: 14px;
   padding: 0 12px;
+}
+
+.item-actions input:disabled {
+  background: #eef2f7;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.stock-note {
+  margin: 0;
+  color: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .solid-btn,
