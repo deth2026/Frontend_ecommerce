@@ -32,8 +32,8 @@
 
         <div class="shopping-visual">
           <img
-            src="https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80"
-            alt="People shopping with bags in a modern store"
+            src="https://img.magnific.com/free-photo/two-beautiful-women-shopping-town_1303-16431.jpg?semt=ais_hybrid&w=740&q=80"
+            alt="Shopping baskets and products in a modern retail store"
           />
           <div class="shopping-visual__label">
             <strong>Shopping made simple</strong>

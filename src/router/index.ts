@@ -4,11 +4,14 @@ import Home from '@/pages/Home.vue'
 import Login from '@/pages/Login.vue'
 import Register from '@/pages/Register.vue'
 import Products from '@/pages/Products.vue'
+import About from '@/pages/About.vue'
+import Contact from '@/pages/Contact.vue'
 import Cart from '@/pages/Cart.vue'
 import Wishlish from '@/pages/Wishlish.vue'
 import ProductDetail from '@/pages/ProductDetail.vue'
 import Checkout from '@/pages/Checkout.vue'
 import Orders from '@/pages/Orders.vue'
+import OrderSuccessView from '@/pages/OrderSuccessView.vue'
 import Profile from '@/pages/Profile.vue'
 import { useAuthStore } from '@/store/auth'
 
@@ -29,6 +32,14 @@ const router = createRouter({
       component: Products,
     },
     {
+      path: '/about',
+      component: About,
+    },
+    {
+      path: '/contact',
+      component: Contact,
+    },
+    {
       path: '/products/:id',
       component: ProductDetail,
       props: true,
@@ -46,6 +57,11 @@ const router = createRouter({
     {
       path: '/checkout',
       component: Checkout,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/order-success',
+      component: OrderSuccessView,
       meta: { requiresAuth: true },
     },
     {

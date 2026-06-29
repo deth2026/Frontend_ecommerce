@@ -42,6 +42,10 @@ const submit = async () => {
   <div class="auth-page">
     <div class="auth-card">
       <div class="auth-header">
+        <router-link to="/" class="back-btn" title="Back to Homepage">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+          Back to Home
+        </router-link>
         <div class="logo">🛒 MyShop</div>
         <h1 class="auth-title">Welcome Back</h1>
         <p class="auth-subtitle">Sign in to continue shopping</p>
@@ -106,6 +110,7 @@ const submit = async () => {
   width: 100%;
   max-width: 440px;
   text-align: center;
+  position: relative;
 }
 
 .auth-header {
@@ -129,6 +134,34 @@ const submit = async () => {
   color: #64748b;
   font-size: 1.05rem;
   margin: 0;
+}
+
+.back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #64748b;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.back-btn:hover {
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.08);
+  border-color: rgba(249, 115, 22, 0.15);
+  transform: translateX(-2px);
+}
+
+.back-btn svg {
+  flex-shrink: 0;
 }
 
 .form-group {

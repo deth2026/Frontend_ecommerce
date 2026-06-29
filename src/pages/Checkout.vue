@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/store/cart'
-import { checkoutOrder } from '@/services/orderService'
+import { checkout } from '@/services/checkout'
 
 const router = useRouter()
 const cartStore = useCartStore()
@@ -10,6 +10,8 @@ const cartStore = useCartStore()
 const loading = ref(false)
 const error = ref('')
 const form = ref({
+  name: '',
+  email: '',
   shipping_address: '',
   phone: '',
   notes: '',
@@ -31,7 +33,9 @@ const submitCheckout = async () => {
   error.value = ''
 
   try {
-    await checkoutOrder({
+    const response = await checkout({
+      name: form.value.name,
+      email: form.value.email,
       shipping_address: form.value.shipping_address,
       address: form.value.shipping_address,
       phone: form.value.phone,
@@ -40,7 +44,14 @@ const submitCheckout = async () => {
     })
 
     cartStore.items = []
-    router.push('/orders')
+
+    const orderId = response?.data?.id
+    const orderTotal = response?.data?.total_amount ?? response?.data?.total ?? subtotal.value
+
+    router.push({
+      path: '/order-success',
+      query: { order_id: orderId, total: orderTotal },
+    })
   } catch (err: any) {
     if (err.response?.status === 401) {
       router.push('/login')
@@ -77,6 +88,14 @@ const submitCheckout = async () => {
           <div v-else-if="hasUnavailableItems" class="state state--error">
             Some items in your cart are out of stock. Please remove them before checkout.
           </div>
+          <label>
+            Full name
+            <input v-model="form.name" type="text" required placeholder="Full name" />
+          </label>
+          <label>
+            Email address
+            <input v-model="form.email" type="email" required placeholder="Email address" />
+          </label>
           <label>
             Shipping address
             <textarea v-model="form.shipping_address" rows="4" required placeholder="Enter delivery address" />

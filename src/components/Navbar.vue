@@ -91,18 +91,37 @@ onMounted(() => {
       <div class="links">
         <router-link to="/" class="nav-link">Home</router-link>
         <router-link to="/products" class="nav-link">Products</router-link>
-        <router-link v-if="isAuthenticated" to="/wishlist" class="nav-link">
-          Wishlist
-          <span v-if="wishlistItems" class="count-badge">{{ wishlistItems }}</span>
-        </router-link>
-        <router-link v-if="isAuthenticated" to="/cart" class="nav-link">
-          Cart
-          <span v-if="cartItems" class="count-badge">{{ cartItems }}</span>
-        </router-link>
+        <router-link to="/about" class="nav-link">About</router-link>
+        <router-link to="/contact" class="nav-link">Contact</router-link>
         <router-link v-if="isAuthenticated" to="/orders" class="nav-link">Orders</router-link>
       </div>
 
       <div class="actions">
+        <div v-if="isAuthenticated" class="quick-actions" aria-label="Shopping shortcuts">
+          <router-link to="/wishlist" class="nav-link nav-link--icon">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path
+                  d="M12 21s-6.7-4.3-9.2-8.5C.9 9.1 2 5.9 4.9 4.7c1.8-.7 3.9-.2 5.3 1.2l1.8 1.8 1.8-1.8c1.4-1.4 3.5-1.9 5.3-1.2 2.9 1.2 4 4.4 2.1 7.8C18.7 16.7 12 21 12 21z"
+                />
+              </svg>
+            </span>
+            <span class="sr-only">Wishlist</span>
+            <span v-if="wishlistItems" class="count-badge">{{ wishlistItems }}</span>
+          </router-link>
+          <router-link to="/cart" class="nav-link nav-link--icon">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path
+                  d="M7 4h-2l-1 2v2h2l3.6 7.6c.2.5.7.8 1.2.8h7.7c.6 0 1.1-.4 1.3-.9l2-5.5A1.5 1.5 0 0 0 21.3 8H7.4L6.7 6.5H20V5H5.7L5 3.5A1 1 0 0 0 4.1 3H2v1.5h1.4l2.8 6.5-1.1 2.2A2 2 0 0 0 7 15h10v-1.5H7c-.2 0-.3-.2-.2-.4l.6-1.1h8.8c.6 0 1.1-.4 1.3-.9l1.4-4.1H7.8L7 4zm2.5 16a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm8 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"
+                />
+              </svg>
+            </span>
+            <span class="sr-only">Cart</span>
+            <span v-if="cartItems" class="count-badge">{{ cartItems }}</span>
+          </router-link>
+        </div>
+
         <router-link v-if="!isAuthenticated" to="/login" class="nav-link nav-link--ghost">
           Login
         </router-link>
@@ -209,6 +228,33 @@ onMounted(() => {
   transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
 
+.nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.nav-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .nav-link:hover,
 .avatar-pill:hover {
   background: rgba(255, 122, 21, 0.09);
@@ -226,6 +272,35 @@ onMounted(() => {
 .logo.router-link-exact-active {
   background: transparent;
   color: #f56f08;
+}
+
+.nav-link--icon {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  justify-content: center;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 122, 21, 0.18);
+  background: rgba(255, 255, 255, 0.7);
+  color: #ff7a15;
+}
+
+.nav-link--icon .sr-only {
+  position: absolute;
+}
+
+.nav-link--icon .count-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border: 2px solid #fff8f1;
+  background: #fff;
+  color: #ff7a15;
+  box-shadow: 0 6px 14px rgba(255, 122, 21, 0.18);
 }
 
 .nav-link--solid {
@@ -298,6 +373,12 @@ onMounted(() => {
 
 .account-wrap {
   position: relative;
+}
+
+.quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .account-menu-backdrop {
@@ -457,6 +538,11 @@ onMounted(() => {
   .logo {
     width: 100%;
     text-align: center;
+  }
+
+  .nav-link--icon {
+    width: 44px;
+    height: 44px;
   }
 
   .avatar-name {
